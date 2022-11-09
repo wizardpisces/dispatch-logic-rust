@@ -1,4 +1,7 @@
 use std::str::FromStr;
+// use std::error::Error;
+// use std::fmt;
+// impl Error for DispatchLogicType {}
 
 #[repr(u8)]
 #[derive(Debug,PartialEq)]

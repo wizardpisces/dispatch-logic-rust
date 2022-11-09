@@ -25,7 +25,6 @@ match_args {{increase|decrease}} <integer>
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-//  dispatchText(constant::DispatchLogicType::Normal);
     match args.len() {
         // no arguments passed
         1 => {
@@ -36,13 +35,13 @@ fn main() {
             println!("{:?}",args[1]);
             let arg = DispatchLogicType::from_str(&args[1]).unwrap();
 
-            println!("{:?}",portal::text(arg));
-            // match arg {
-            //     // Ok(42) => println!("This is the answer!"),
-            //     Ok(DispatchLogicType::Normal) => println!("This is !",portal::text(arg)),
-            //     Ok(DispatchLogicType::Seller) => println!("This is !",portal::text(arg)),
-            //     _ => println!("This is not the answer."),
-            // }
+            println!("{:?}",portal::text(&arg));
+            match arg {
+                // Ok(42) => println!("This is the answer!"),
+                DispatchLogicType::Normal => println!("This is ! normal"),
+                DispatchLogicType::Seller => println!("This is ! seller"),
+                // _ => println!("This is not the answer."), // unreachable
+            }
         },
         // one command and one argument passed
         3 => {
