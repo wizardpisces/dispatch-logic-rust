@@ -7,6 +7,7 @@ name = "dispatch-logic"
 version = "0.1.0"
 dependencies = [
  "hello_macro",
+ "inline-assembly-lib",
 ]
 
 [[package]]
@@ -23,6 +24,10 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "inline-assembly-lib"
+version = "0.1.0"
 
 [[package]]
 name = "proc-macro2"

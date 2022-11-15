@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 hello_macro = { path = "./hello_macro" }
+inline-assembly-lib = { path = "./inline-assembly-lib" }
 
 [[bin]]
 name = "dispatch-logic"

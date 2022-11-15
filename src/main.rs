@@ -7,6 +7,7 @@ mod text;
 use text::dispatch_logic::portal;
 use constant::DispatchLogicType;
 use hello_macro::hello_macro;
+use inline_assembly_lib::inline_assembly_lib;
 
 fn increase(number: i32) {
     println!("{}", number + 1);
@@ -25,7 +26,8 @@ match_args {{increase|decrease}} <integer>
 }
 
 fn main() {
-    hello_macro(); // test macro
+    // hello_macro(); // test macro
+    inline_assembly_lib(); // test inline_assembly_lib
     let args: Vec<String> = env::args().collect();
     match args.len() {
         // no arguments passed
