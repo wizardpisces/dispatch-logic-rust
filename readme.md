@@ -8,4 +8,6 @@ Rust Demo of dispatchLogic
 cargo run
 cargo run Normal # change portal to normal
 cargo run Seller # change portal to seller
+
+cargo test # run test cases
 ```
