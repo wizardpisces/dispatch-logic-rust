@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 hello_macro_derive = { path = "./hello_macro_derive" }
+# messenger = { path = "./messenger" }
 rand = "0.8.4"
 
 [[bin]]
