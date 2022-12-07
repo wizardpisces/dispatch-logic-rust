@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{collections::LinkedList, fmt::Display};
 
 type Linked<T> = Option<Box<Node<T>>>;
 /// 单链表节点
@@ -10,8 +10,10 @@ struct Node<T> {
 
 /// 单链表
 #[derive(Debug)]
-struct LinkedList<T> {
+struct LinkedListMock<T> {
     head: Linked<T>,
+    tail: Linked<T>,
+    len: usize,
 }
 
 impl<T> Node<T> {
@@ -20,12 +22,19 @@ impl<T> Node<T> {
     }
 }
 
-impl<T> LinkedList<T> {
+impl<T> LinkedListMock<T> {
     fn new() -> Self {
-        Self { head: None }
+        Self {
+            head: None,
+            tail: None,
+            len: 0,
+        }
+    }
+    fn is_empty(&self) -> bool {
+        self.head.is_none()
     }
     /// 在链表头部插入节点(头插法push front)
-    fn prepend(&mut self, data: T) -> &mut Self {
+    fn push_front(&mut self, data: T) -> &mut Self {
         self.head = Some(Box::new(Node {
             data,
             next: self.head.take(),
@@ -33,20 +42,23 @@ impl<T> LinkedList<T> {
 
         self
     }
+    fn pop_front(&mut self) -> Option<T> {
+        self.head.take().map_or(None, |node| -> Option<T> {
+            self.head = node.next;
 
-    fn tail(&self) -> &Linked<T> {
-        let mut current = &self.head;
-        while let Some(node) = current {
-            if node.next.is_none() {
-                break;
-            }
-            current = &node.next;
-        }
-        current
-    }   
+            Some(node.data)
+        })
+        // match self.head.take() {
+        //     None => None,
+        //     Some(node) => {
+        //         self.head = node.next;
+        //         Some(node.data)
+        //     }
+        // }
+    }
 
     // 尾插
-    fn append(&mut self, data: T) -> &mut Self {
+    fn push_back(&mut self, data: T) -> &mut Self {
         let new_node = Some(Box::new(Node::new(data)));
         match self.head.as_mut() {
             None => self.head = new_node,
@@ -59,28 +71,8 @@ impl<T> LinkedList<T> {
         }
         self
     }
-    fn reverse() {}
-    fn delete() {}
-    fn head() {}
-    fn lenth(&mut self) -> usize {
-        let mut next = &self.head;
-        let mut lenth = 0;
-        while let Some(node) = next {
-            lenth = lenth + 1;
-            next = &node.next;
-        }
-        lenth
-    }
-    fn pop_front(&mut self) -> Option<T> {
-        match self.head.take() {
-            None => None,
-            Some(node) => {
-                self.head = node.next;
-                Some(node.data)
-            }
-        }
-    }
-    fn pop_end(&mut self) -> Option<T> {
+
+    fn pop_back(&mut self) -> Option<T> {
         match self.head.as_mut() {
             None => None,
             Some(mut current) => {
@@ -89,15 +81,99 @@ impl<T> LinkedList<T> {
                 }
 
                 match current.next {
-                    Some(_) => Some(current.next.take().unwrap().data),// link length >1
-                    None => Some(self.head.take().unwrap().data), // link length = 1
+                    Some(_) => Some(current.next.take().unwrap().data), // link length >1
+                    None => Some(self.head.take().unwrap().data),       // link length = 1
                 }
             }
         }
     }
+
+    fn reverse(&mut self) {
+        if self.is_empty() || self.head.as_ref().unwrap().next.is_none() {
+            return;
+        }
+        // should has length >1
+        let mut left = self.head.as_mut().unwrap().next.take();
+        while left.is_some() {
+            let mut taked_left = left.take().unwrap();
+            left = taked_left.next;
+            taked_left.next = self.head.take();
+            self.head = Some(taked_left);
+        }
+    }
+
+    fn len(&self) -> usize {
+        let mut next = &self.head;
+        let mut len = 0;
+        while let Some(node) = next {
+            len = len + 1;
+            next = &node.next;
+        }
+        len
+    }
+
+    fn head() {}
+    fn iter() {}
+    fn clear() {}
+    fn contains(&self, data: &T) -> bool
+    where
+        T: PartialEq<T>,
+    {
+        match self.head.as_ref() {
+            None => false,
+            Some(mut current) => {
+                if current.data == *data {
+                    return true;
+                }
+                while current.next.is_some() {
+                    current = &current.next.as_ref().unwrap();
+                    if current.data == *data {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+    }
+    fn front() {}
+    fn front_mut() {}
+    fn back(&self) -> &Linked<T> {
+        // optimize to O(1)
+        let mut current = &self.head;
+        while let Some(node) = current {
+            if node.next.is_none() {
+                break;
+            }
+            current = &node.next;
+        }
+        current
+    }
+    fn back_mut() {}
+    fn split_off() {}
+    fn remove() {}
+    fn drain_filter() {}
+    fn from_iter(&mut self, vec:Vec<T>) -> &mut Self {
+        // vec.into_iter().for_each(move |ele| self.push_back(ele) );
+        for data in vec {
+            self.push_back(data);
+        }
+        self
+    }
 }
 
-impl<T: Display> Display for LinkedList<T> {
+
+
+impl<T, const N: usize> From<[T; N]> for LinkedListMock<T> {
+    fn from(arr: [T; N]) -> Self {
+        let mut ll: LinkedListMock<T> = LinkedListMock::<T>::new();
+        ll.from_iter(Vec::from_iter(arr));
+        // LinkedList::contains(&self, x)
+        // LinkedList::from([1,2,3]);
+        ll
+    }
+}
+
+impl<T: Display> Display for LinkedListMock<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         if self.head.is_none() {
             write!(f, "None\n")?;
@@ -117,40 +193,63 @@ impl<T: Display> Display for LinkedList<T> {
 mod tests {
 
     use super::*;
-    #[test]
-    fn test_prepend() {
-        let mut ll = LinkedList::new();
-        ll.prepend(3).prepend(2).prepend(1); // 1->2->3->none
-        assert_eq!(ll.lenth(), 3);
+    fn init_linked_list() -> LinkedListMock<usize> {
+        let mut ll = LinkedListMock::new();
+        // ll.from([1, 2, 3]);
+        // LinkedList::from([1, 2, 3]);
+        ll.push_back(1).push_back(2).push_back(3); // 1->2->3->none
+        ll
     }
     #[test]
-    fn test_tail() {
-        let mut ll = LinkedList::new();
-        assert!(ll.tail().is_none());
-        ll.prepend(3).prepend(2).prepend(1); // 1->2->3->none
-                                             // print!("{:?}", ll.tail());
-        assert_eq!(ll.tail().as_ref().unwrap().data, 3)
+    fn push_front() {
+        let mut ll = LinkedListMock::new();
+        ll.push_front(3).push_front(2).push_front(1); // 1->2->3->none
+        assert_eq!(ll.len(), 3);
     }
     #[test]
-    fn test_append() {
-        let mut ll = LinkedList::new();
-        ll.append(1).append(2).append(3);
-        print!("{}", ll);
-    }
-    #[test]
-    fn test_pop_front() {
-        let mut ll = LinkedList::new();
-        ll.append(1).append(2).append(3); // 1->2->3->none
+    fn pop_front() {
+        let mut ll = LinkedListMock::new();
+        ll.push_back(1).push_back(2).push_back(3); // 1->2->3->none
         assert_eq!(ll.pop_front().unwrap(), 1);
     }
-    #[test]
-    fn test_pop_end() {
-        let mut ll = LinkedList::new();
-        assert!(ll.pop_end().is_none());
-        ll.append(1); // 1->none
 
-        assert_eq!(ll.pop_end().unwrap(),1);
-        ll.append(1).append(2).append(3); // 1->2->3->none
-        assert_eq!(ll.pop_end().unwrap(), 3);
+    #[test]
+    fn push_back() {
+        let mut ll = LinkedListMock::new();
+        ll.push_back(1).push_back(2).push_back(3);
+        print!("{}", ll);
+    }
+
+    #[test]
+    fn pop_back() {
+        let mut ll = LinkedListMock::new();
+        assert!(ll.pop_back().is_none());
+        ll.push_back(1); // 1->none
+
+        assert_eq!(ll.pop_back().unwrap(), 1);
+        ll.push_back(1).push_back(2).push_back(3); // 1->2->3->none
+        assert_eq!(ll.pop_back().unwrap(), 3);
+    }
+    #[test]
+    fn back() {
+        let mut ll = LinkedListMock::new();
+        assert!(ll.back().is_none());
+        ll.push_front(3).push_front(2).push_front(1); // 1->2->3->none
+                                                      // print!("{:?}", ll.tail());
+        assert_eq!(ll.back().as_ref().unwrap().data, 3)
+    }
+    #[test]
+    fn contains() {
+        let ll = init_linked_list();
+        assert!(ll.contains(&1));
+        assert!(ll.contains(&2));
+        assert!(ll.contains(&3));
+    }
+
+    #[test]
+    fn from(){
+        let ll = LinkedListMock::from([1,2,3]);
+        print!("{}", ll);
+        assert_eq!(ll.len(),3)
     }
 }
