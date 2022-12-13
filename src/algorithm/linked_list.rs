@@ -1,11 +1,12 @@
 use std::{collections::LinkedList, fmt::Display};
 
 type Linked<T> = Option<Box<Node<T>>>;
-/// 单链表节点
+/// 双向链表节点
 #[derive(Debug)]
 struct Node<T> {
     data: T,
     next: Linked<T>,
+    prev: Linked<T>,
 }
 
 /// 单链表
@@ -18,7 +19,11 @@ struct LinkedListMock<T> {
 
 impl<T> Node<T> {
     fn new(data: T) -> Self {
-        Self { data, next: None }
+        Self {
+            data,
+            next: None,
+            prev: None,
+        }
     }
 }
 
@@ -38,6 +43,7 @@ impl<T> LinkedListMock<T> {
         self.head = Some(Box::new(Node {
             data,
             next: self.head.take(),
+            prev: None,
         }));
         self.len += 1;
         self
@@ -49,13 +55,6 @@ impl<T> LinkedListMock<T> {
             self.len -= 1;
             Some(node.data)
         })
-        // match self.head.take() {
-        //     None => None,
-        //     Some(node) => {
-        //         self.head = node.next;
-        //         Some(node.data)
-        //     }
-        // }
     }
 
     // 尾插
@@ -106,9 +105,12 @@ impl<T> LinkedListMock<T> {
     pub fn len(&self) -> usize {
         self.len
     }
-    
+
     pub fn iter(&self) -> Iter<T> {
-        Iter { head: self.head.as_ref().map(|node| node),len:self.len }
+        Iter {
+            head: self.head.as_ref().map(|node| node),
+            len: self.len,
+        }
     }
     pub fn clear(&mut self) {
         *self = Self::new();
@@ -133,8 +135,14 @@ impl<T> LinkedListMock<T> {
             }
         }
     }
-    fn front() {}
-    fn front_mut() {}
+    fn front(&self) -> Option<&T> {
+        return self.head.as_ref().map(|node| return &node.as_ref().data);
+    }
+    fn front_mut(&mut self) -> Option<&mut T> {
+        return self.head.as_mut().map(|node| {
+            return &mut node.as_mut().data;
+        });
+    }
     fn back(&self) -> &Linked<T> {
         // optimize to O(1)
         let mut current = &self.head;
@@ -146,9 +154,59 @@ impl<T> LinkedListMock<T> {
         }
         current
     }
+
+    fn get_node_by_index(&mut self, index: usize) -> Option<&mut Box<Node<T>>> {
+        assert!(index < self.len, "get_node_by_index out of range");
+        let mut cur = self.head.as_mut();
+        let mut i = index.clone();
+        while i > 0 {
+            // cur = cur.map(|node|node.next).unwrap().as_mut();
+            match cur {
+                None => panic!("out of range"),
+                Some(node) => cur = node.next.as_mut(),
+            }
+            i -= 1;
+        }
+        cur
+    }
+    fn remove_v1(&mut self, at: usize) -> T {
+        let len = self.len;
+        assert!(
+            at < len,
+            "Cannot remove at an index outside of the list bounds"
+        );
+
+        // self.head.take().unwrap().data
+        if at == 0 {
+            let mut temp = self.head.take().unwrap();
+            self.head = temp.next;
+            return temp.data;
+        } else {
+            let mut prev = self.get_node_by_index(at - 1);
+            let cur = prev.as_mut().and_then(|node| node.next.take());
+            let temp = cur.unwrap();
+            prev.unwrap().next = temp.next;
+            return temp.data;
+        }
+    }
+    // fn remove(&mut self, at: usize) -> T {
+    //    let offset_from_end = len - at - 1;
+    // if at <= offset_from_end {
+    //     let mut cursor = self.cursor_front_mut();
+    //     for _ in 0..at {
+    //         cursor.move_next();
+    //     }
+    //     cursor.remove_current().unwrap()
+    // } else {
+    //     let mut cursor = self.cursor_back_mut();
+    //     for _ in 0..offset_from_end {
+    //         cursor.move_prev();
+    //     }
+    //     cursor.remove_current().unwrap()
+    // }
+    // }
     fn back_mut() {}
     fn split_off() {}
-    fn remove() {}
     fn drain_filter() {}
     fn from_iter(&mut self, vec: Vec<T>) -> &mut Self {
         // vec.into_iter().for_each(move |ele| {
@@ -157,31 +215,24 @@ impl<T> LinkedListMock<T> {
         for data in vec {
             self.push_back(data);
         }
+
         self
     }
-    fn append(){}
+    fn append() {}
 }
 
-struct Iter<'a,T> {
+struct Iter<'a, T> {
     head: Option<&'a Box<Node<T>>>,
     len: usize,
 }
 
-impl<'a,T> Iter<'a,T> {
+impl<'a, T> Iter<'a, T> {
     fn next(&mut self) -> Option<&T> {
         self.head.map(|node| {
             self.head = node.next.as_ref();
             self.len -= 1;
             &node.data
         })
-        // match self.head {
-        //     None=>None,
-        //     Some(node)=>{
-        //         self.head = node.next.as_ref();
-        //         self.len-=1;
-        //         Some(&node.data)
-        //     }
-        // }
     }
 }
 
@@ -218,14 +269,17 @@ mod tests {
     }
     #[test]
     fn standardLinkedList() {
-        let l = LinkedList::from([1, 2, 3]);
+        let mut l = LinkedList::from([1, 2, 3]);
         let mut iter = l.iter();
         assert_eq!(iter.next(), Some(&1));
         assert_eq!(iter.next(), Some(&2));
         assert_eq!(iter.next(), Some(&3));
         assert_eq!(iter.next(), None);
-        assert_eq!(l.len(), 3)
-        // l.clear();
+        l.front_mut();
+        l.front();
+        assert_eq!(l.len(), 3);
+        // l.remove(1);
+        // assert_eq!(l.len(), 2);
     }
     #[test]
     fn push_front() {
@@ -299,5 +353,33 @@ mod tests {
         assert_eq!(iter2.next(), Some(&1));
         assert_eq!(l.len(), 3);
         assert_eq!(iter2.len, 2);
+    }
+    #[test]
+    fn front() {
+        let l = LinkedListMock::from([1, 2, 3]);
+        assert_eq!(l.front(), Some(&1));
+    }
+    #[test]
+    fn front_mut() {
+        let mut l = LinkedListMock::from([1, 2, 3]);
+        assert_eq!(l.front_mut(), Some(&mut 1));
+        *l.front_mut().unwrap() = 2;
+        assert_eq!(l.front_mut(), Some(&mut 2));
+    }
+
+    #[test]
+    fn get_node_by_index() {
+        let mut l = LinkedListMock::from([1, 2, 3]);
+        assert_eq!(l.get_node_by_index(0).unwrap().data, 1);
+        assert_eq!(l.get_node_by_index(1).unwrap().data, 2);
+        assert_eq!(l.get_node_by_index(2).unwrap().data, 3);
+    }
+
+    #[test]
+    fn remove_v1() {
+        let mut l = LinkedListMock::from([1, 2, 3]);
+        assert_eq!(l.remove_v1(1), 2);
+        assert_eq!(l.remove_v1(0), 1);
+        assert_eq!(l.remove_v1(0), 3);
     }
 }
