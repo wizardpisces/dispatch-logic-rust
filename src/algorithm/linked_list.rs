@@ -9,7 +9,6 @@ struct Node<T> {
     prev: Linked<T>,
 }
 
-/// 单链表
 #[derive(Debug)]
 struct LinkedListMock<T> {
     head: Linked<T>,
@@ -39,13 +38,14 @@ impl<T> LinkedListMock<T> {
         self.head.is_none()
     }
     /// 在链表头部插入节点(头插法push front)
-    pub fn push_front(&mut self, data: T) -> &mut Self {
-        self.head = Some(Box::new(Node {
-            data,
-            next: self.head.take(),
-            prev: None,
-        }));
+    fn push_front_node(&mut self, mut node: Box<Node<T>>) {
+        let cur_head = self.head.take();
+        node.next = cur_head;
+        self.head = Some(node);
         self.len += 1;
+    }
+    pub fn push_front(&mut self, data: T) -> &mut Self {
+        self.push_front_node(Box::new(Node::new(data)));
         self
     }
     pub fn pop_front(&mut self) -> Option<T> {
@@ -218,7 +218,12 @@ impl<T> LinkedListMock<T> {
 
         self
     }
-    fn append() {}
+    fn append(&mut self, other: &mut LinkedListMock<T>)->&mut Self {
+        // self.back().as_mut().map(|node|{
+        //     node.next = other.head.take().unwrap().next
+        // });
+        self
+    }
 }
 
 struct Iter<'a, T> {
@@ -270,6 +275,7 @@ mod tests {
     #[test]
     fn standardLinkedList() {
         let mut l = LinkedList::from([1, 2, 3]);
+        let mut l2 = LinkedList::from([4,5,6]);
         let mut iter = l.iter();
         assert_eq!(iter.next(), Some(&1));
         assert_eq!(iter.next(), Some(&2));
@@ -277,7 +283,10 @@ mod tests {
         assert_eq!(iter.next(), None);
         l.front_mut();
         l.front();
-        assert_eq!(l.len(), 3);
+        l.push_back(1);
+        l.back();
+        l.append(&mut l2);
+        // assert_eq!(l.len(), 3);
         // l.remove(1);
         // assert_eq!(l.len(), 2);
     }
