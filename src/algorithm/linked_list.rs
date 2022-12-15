@@ -6,13 +6,13 @@ type Linked<T> = Option<Box<Node<T>>>;
 struct Node<T> {
     data: T,
     next: Linked<T>,
-    prev: Linked<T>,
+    // prev: Linked<T>,// box 外部可变引用数量受限，需要用 Rc 跟 RefCell 来实现；详情参加 double_linked_list
 }
 
 #[derive(Debug)]
 struct LinkedListMock<T> {
     head: Linked<T>,
-    tail: Linked<T>,
+    // tail: Linked<T>,
     len: usize,
 }
 
@@ -21,7 +21,7 @@ impl<T> Node<T> {
         Self {
             data,
             next: None,
-            prev: None,
+            // prev: None,
         }
     }
 }
@@ -30,7 +30,7 @@ impl<T> LinkedListMock<T> {
     fn new() -> Self {
         Self {
             head: None,
-            tail: None,
+            // tail: None,
             len: 0,
         }
     }
