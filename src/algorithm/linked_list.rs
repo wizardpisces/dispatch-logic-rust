@@ -136,11 +136,11 @@ impl<T> LinkedListMock<T> {
         }
     }
     fn front(&self) -> Option<&T> {
-        return self.head.as_ref().map(|node| return &node.as_ref().data);
+        return self.head.as_ref().map(|node| return &node.data);
     }
     fn front_mut(&mut self) -> Option<&mut T> {
         return self.head.as_mut().map(|node| {
-            return &mut node.as_mut().data;
+            return &mut node.data;
         });
     }
     fn back(&self) -> &Linked<T> {

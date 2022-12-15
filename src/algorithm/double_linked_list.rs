@@ -24,7 +24,6 @@ impl<T: Copy> Node<T> {
             prev: None,
         }
     }
-    fn test() {}
 }
 
 impl<T: Copy> DoubleLinkedList<T> {
@@ -65,14 +64,15 @@ impl<T: Copy> DoubleLinkedList<T> {
     pub fn head(&self) -> Linked<T> {
         self.head.clone()
     }
-    //     pub fn pop_front(&mut self) -> Option<T> {
-    //         self.head.take().map_or(None, |node| -> Option<T> {
-    //             self.head = node.borrow().next;
 
-    //             self.len -= 1;
-    //             Some(node.borrow().data)
-    //         })
-    //     }
+    pub fn pop_front(&mut self) -> Option<T> {
+        self.head.take().map_or(None, |node| -> Option<T> {
+            self.head = node.borrow().next.clone();
+
+            self.len -= 1;
+            Some(node.borrow().data)
+        })
+    }
 
     fn push_back_node(&mut self, mut node: Node<T>) {
         let linked_node = self.gen_linked_node(node);
@@ -92,71 +92,74 @@ impl<T: Copy> DoubleLinkedList<T> {
         self
     }
 
-    //     pub fn pop_back(&mut self) -> Option<T> {
-    //         match self.head.as_mut() {
-    //             None => None,
-    //             Some(mut current) => {
-    //                 while current.next.is_some() && current.next.as_ref().unwrap().next.is_some() {
-    //                     current = current.next.as_mut().unwrap()
-    //                 }
-    //                 self.len -= 1;
-    //                 match current.next {
-    //                     Some(_) => Some(current.next.take().unwrap().data), // link length >1
-    //                     None => Some(self.head.take().unwrap().data),       // link length = 1
-    //                 }
-    //             }
-    //         }
-    //     }
+    pub fn pop_back(&mut self) -> Option<T> {
+        match self.head {
+            None => None,
+            Some(ref head_node) => {
+                let tail_node = self.tail.take().unwrap();
+                let prev = tail_node.borrow().prev.clone();
 
-    //     pub fn reverse(&mut self) {
-    //         if self.is_empty() || self.head.as_ref().unwrap().next.is_none() {
-    //             return;
-    //         }
-    //         // should has length >1
-    //         let mut left = self.head.as_mut().unwrap().next.take();
-    //         while left.is_some() {
-    //             let mut taked_left = left.take().unwrap();
-    //             left = taked_left.next;
-    //             taked_left.next = self.head.take();
-    //             self.head = Some(taked_left);
-    //         }
-    //     }
-        pub fn len(&self) -> usize {
-            self.len
-        }
+                match prev {
+                    None => {
+                        self.tail = None;
+                        self.head = None
+                    }
+                    Some(prev_node) => {
+                        prev_node.borrow_mut().next = None;
+                        self.tail = Some(prev_node);
+                    }
+                }
 
-        pub fn iter(&self) -> Iter<T> {
-            Iter {
-                head: self.head.clone().map(|node| node),
-                len: self.len,
+                self.len -= 1;
+                let x = Some(tail_node.borrow().data);
+                x
             }
         }
-    //     pub fn clear(&mut self) {
-    //         *self = Self::new();
-    //     }
-    //     pub fn contains(&self, data: &T) -> bool
-    //     where
-    //         T: PartialEq<T>,
-    //     {
-    //         match self.head.as_ref() {
-    //             None => false,
-    //             Some(mut current) => {
-    //                 if current.data == *data {
-    //                     return true;
-    //                 }
-    //                 while current.next.is_some() {
-    //                     current = &current.next.as_ref().unwrap();
-    //                     if current.data == *data {
-    //                         return true;
-    //                     }
-    //                 }
-    //                 return false;
-    //             }
-    //         }
-    //     }
-    //     fn front(&self) -> Option<&T> {
-    //         return self.head.as_ref().map(|node| return &node.as_ref().data);
-    //     }
+    }
+
+    pub fn len(&self) -> usize {
+        self.len
+    }
+
+    pub fn iter(&self) -> Iter<T> {
+        Iter {
+            head: self.head.clone().map(|node| node),
+            len: self.len,
+        }
+    }
+    pub fn clear(&mut self) {
+        *self = Self::new();
+    }
+
+    pub fn contains(&self, data: &T) -> bool
+    where
+        T: PartialEq<T>,
+    {
+        match &self.head {
+            None => false,
+            Some(current) => {
+                let mut cur_node = current.clone();
+                if cur_node.borrow().data == *data {
+                    return true;
+                }
+                while cur_node.borrow().next.is_some() {
+                    let temp = cur_node.borrow().next.clone();
+                    cur_node = temp.unwrap();
+
+                    if cur_node.borrow().data == *data {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+    }
+    fn front(&self) -> Option<T> {
+        return self.head.as_ref().map(|node| {
+            let data = node.borrow().data;
+            data
+        });
+    }
     //     fn front_mut(&mut self) -> Option<&mut T> {
     //         return self.head.as_mut().map(|node| {
     //             return &mut node.as_mut().data;
@@ -241,26 +244,26 @@ impl<T: Copy> DoubleLinkedList<T> {
     }
 }
 
-struct Iter<T:Copy> {
+struct Iter<T: Copy> {
     head: Option<Rc<RefCell<Node<T>>>>,
     len: usize,
 }
 
-impl<T:Copy> Iter<T> {
+impl<T: Copy> Iter<T> {
     fn next(&mut self) -> Option<T> {
         let head = self.head.take();
-        match  head {
-            None=>None,
-            Some(ref head_node)=>{
+        match head {
+            None => None,
+            Some(ref head_node) => {
                 self.head = head_node.borrow().next.clone();
-                self.len-=1;
+                self.len -= 1;
                 Some(head_node.borrow().data)
             }
         }
     }
 }
 
-impl<T:Copy, const N: usize> From<[T; N]> for DoubleLinkedList<T> {
+impl<T: Copy, const N: usize> From<[T; N]> for DoubleLinkedList<T> {
     fn from(arr: [T; N]) -> Self {
         let mut ll: DoubleLinkedList<T> = DoubleLinkedList::new();
         ll.from_iter(Vec::from_iter(arr));
@@ -332,30 +335,31 @@ mod tests {
         assert_eq!(iter.next(), Some(6));
         assert_eq!(iter.next(), None);
     }
-    // #[test]
-    // fn pop_front() {
-    //     let mut ll = DoubleLinkedList::new();
-    //     ll.push_back(1).push_back(2).push_back(3); // 1->2->3->none
-    //     assert_eq!(ll.pop_front().unwrap(), 1);
-    // }
+    #[test]
+    fn pop_front() {
+        let mut ll = DoubleLinkedList::new();
+        ll.push_back(1).push_back(2).push_back(3); // 1->2->3->none
+        assert_eq!(ll.pop_front().unwrap(), 1);
+    }
 
-    // #[test]
-    // fn push_back() {
-    //     let mut ll = DoubleLinkedList::new();
-    //     ll.push_back(1).push_back(2).push_back(3);
-    //     print!("{}", ll);
-    // }
+    #[test]
+    fn push_back() {
+        let mut ll = DoubleLinkedList::new();
+        ll.push_back(1).push_back(2).push_back(3);
+        print!("{}", ll);
+    }
 
-    // #[test]
-    // fn pop_back() {
-    //     let mut ll = DoubleLinkedList::new();
-    //     assert!(ll.pop_back().is_none());
-    //     ll.push_back(1); // 1->none
+    #[test]
+    fn pop_back() {
+        let mut ll = DoubleLinkedList::new();
+        assert!(ll.pop_back().is_none());
+        ll.push_back(1); // 1->none
 
-    //     assert_eq!(ll.pop_back().unwrap(), 1);
-    //     ll.push_back(1).push_back(2).push_back(3); // 1->2->3->none
-    //     assert_eq!(ll.pop_back().unwrap(), 3);
-    // }
+        assert_eq!(ll.pop_back().unwrap(), 1);
+
+        ll.push_back(1).push_back(2).push_back(3); // 1->2->3->none
+        assert_eq!(ll.pop_back().unwrap(), 3);
+    }
     // #[test]
     // fn back() {
     //     let mut ll = DoubleLinkedList::new();
@@ -364,13 +368,13 @@ mod tests {
     //                                                   // print!("{:?}", ll.tail());
     //     assert_eq!(ll.back().as_ref().unwrap().data, 3)
     // }
-    // #[test]
-    // fn contains() {
-    //     let ll = init_linked_list();
-    //     assert!(ll.contains(&1));
-    //     assert!(ll.contains(&2));
-    //     assert!(ll.contains(&3));
-    // }
+    #[test]
+    fn contains() {
+        let ll = init_linked_list();
+        assert!(ll.contains(&1));
+        assert!(ll.contains(&2));
+        assert!(ll.contains(&3));
+    }
 
     #[test]
     fn from() {
@@ -378,12 +382,12 @@ mod tests {
         print!("{}", ll);
         assert_eq!(ll.len, 3)
     }
-    // #[test]
-    // fn clear() {
-    //     let mut ll = init_linked_list();
-    //     ll.clear();
-    //     assert!(ll.is_empty());
-    // }
+    #[test]
+    fn clear() {
+        let mut ll = init_linked_list();
+        ll.clear();
+        assert!(ll.is_empty());
+    }
     #[test]
     fn iter() {
         let l = DoubleLinkedList::from([1, 2, 3]);
