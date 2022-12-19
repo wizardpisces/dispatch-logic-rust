@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::LinkedList, fmt::Display, rc::Rc};
+use std::{cell::RefCell, collections::LinkedList, fmt::Display, rc::{Rc, Weak}};
 
 type Linked<T> = Option<Rc<RefCell<Node<T>>>>;
 /// 双向链表节点
@@ -6,7 +6,7 @@ type Linked<T> = Option<Rc<RefCell<Node<T>>>>;
 struct Node<T> {
     data: T,
     next: Linked<T>,
-    prev: Linked<T>,
+    prev: Option<Weak<RefCell<Node<T>>>>
 }
 
 #[derive(Debug)]
@@ -46,7 +46,7 @@ impl<T: Copy> DoubleLinkedList<T> {
 
         if let Some(head_node) = cur_head {
             node.next = Some(head_node.clone());
-            head_node.borrow_mut().prev = Some(head_node.clone());
+            head_node.borrow_mut().prev = Some(Rc::downgrade(&head_node));
             self.head = self.gen_linked_node(node);
         } else {
             self.head = self.gen_linked_node(node);
@@ -91,7 +91,8 @@ impl<T: Copy> DoubleLinkedList<T> {
             None => None,
             Some(ref head_node) => {
                 let tail_node = self.tail.take().unwrap();
-                let prev = tail_node.borrow().prev.clone();
+                let x = Some(tail_node.borrow().data);
+                let prev = &tail_node.borrow_mut().prev;
 
                 match prev {
                     None => {
@@ -99,13 +100,13 @@ impl<T: Copy> DoubleLinkedList<T> {
                         self.head = None
                     }
                     Some(prev_node) => {
-                        prev_node.borrow_mut().next = None;
-                        self.tail = Some(prev_node);
+                        let mut new_tail_node = prev_node.upgrade();
+                        new_tail_node.as_mut().unwrap().borrow_mut().next = None;
+                        self.tail = new_tail_node;
                     }
                 }
 
                 self.len -= 1;
-                let x = Some(tail_node.borrow().data);
                 x
             }
         }
