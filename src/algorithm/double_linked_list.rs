@@ -58,12 +58,6 @@ impl<T: Copy> DoubleLinkedList<T> {
         self.push_front_node(Node::new(data));
         self
     }
-    pub fn tail(&self) -> Linked<T> {
-        self.tail.clone()
-    }
-    pub fn head(&self) -> Linked<T> {
-        self.head.clone()
-    }
 
     pub fn pop_front(&mut self) -> Option<T> {
         self.head.take().map_or(None, |node| -> Option<T> {
@@ -160,11 +154,12 @@ impl<T: Copy> DoubleLinkedList<T> {
             data
         });
     }
-    //     fn front_mut(&mut self) -> Option<&mut T> {
-    //         return self.head.as_mut().map(|node| {
-    //             return &mut node.as_mut().data;
-    //         });
-    //     }
+    // fn front_mut(&mut self) -> Option<&mut T> {
+    //     return self.head.as_mut().map(|node| {
+    //         let data = Ref::map(node.borrow(),|node_mut|&node_mut.data);
+    //         data
+    //     });
+    // }
     //     fn back(&self) -> &Linked<T> {
     //         // optimize to O(1)
     //         let mut current = &self.head;
@@ -177,20 +172,16 @@ impl<T: Copy> DoubleLinkedList<T> {
     //         current
     //     }
 
-    //     fn get_node_by_index(&mut self, index: usize) -> Option<Rc<&mut Box<Node<T>>>> {
-    //         assert!(index < self.len, "get_node_by_index out of range");
-    //         let mut cur = self.head;
-    //         let mut i = index.clone();
-    //         while i > 0 {
-    //             // cur = cur.map(|node|node.next).unwrap().as_mut();
-    //             match cur {
-    //                 None => panic!("out of range"),
-    //                 Some(node) => cur = node.next,
-    //             }
-    //             i -= 1;
-    //         }
-    //         cur
-    //     }
+    fn get_node_by_index(&mut self, index: usize) -> Linked<T> {
+        assert!(index < self.len, "get_node_by_index out of range");
+        let mut current = self.head.clone();
+        let mut i = index;
+        while i > 0 {
+            current.clone().map(|node|current = node.borrow().next.clone());
+            i -= 1;
+        }
+        current
+    }
     //     fn remove_v1(&mut self, at: usize) -> T {
     //         let len = self.len;
     //         assert!(
@@ -237,7 +228,7 @@ impl<T: Copy> DoubleLinkedList<T> {
         self
     }
     fn append(&mut self, other: &mut DoubleLinkedList<T>) -> &mut Self {
-        self.tail().unwrap().borrow_mut().next = other.head();
+        self.tail.as_mut().unwrap().borrow_mut().next = other.head.clone();
         self.tail = other.tail.clone();
         self.len = self.len + other.len;
         self
@@ -318,7 +309,8 @@ mod tests {
     #[test]
     fn tail() {
         let ll = init_linked_list();
-        assert_eq!(ll.tail().unwrap().borrow().data, 3);
+        let data = ll.tail.unwrap().borrow().data;
+        assert_eq!(data, 3);
     }
     #[test]
     fn append() {
@@ -403,27 +395,33 @@ mod tests {
         assert_eq!(l.len(), 3);
         assert_eq!(iter2.len, 2);
     }
-    // #[test]
-    // fn front() {
-    //     let l = DoubleLinkedList::from([1, 2, 3]);
-    //     assert_eq!(l.front(), Some(&1));
-    // }
+    #[test]
+    fn front() {
+        let l = DoubleLinkedList::from([1, 2, 3]);
+        assert_eq!(l.front(), Some(1));
+    }
     // #[test]
     // fn front_mut() {
     //     let mut l = DoubleLinkedList::from([1, 2, 3]);
-    //     assert_eq!(l.front_mut(), Some(&mut 1));
-    //     *l.front_mut().unwrap() = 2;
-    //     assert_eq!(l.front_mut(), Some(&mut 2));
+    //     // assert_eq!(*l.front_mut().unwrap(), 1);
+    //     // *l.front_mut().unwrap() = 2;
+    //     // assert_eq!(*l.front_mut().unwrap(), 2);
     // }
 
-    // #[test]
-    // fn get_node_by_index() {
-    //     let mut l = DoubleLinkedList::from([1, 2, 3]);
-    //     assert_eq!(l.get_node_by_index(0).unwrap().data, 1);
-    //     assert_eq!(l.get_node_by_index(1).unwrap().data, 2);
-    //     assert_eq!(l.get_node_by_index(2).unwrap().data, 3);
-    // }
+    #[test]
+    fn get_node_by_index() {
+        let mut l = DoubleLinkedList::from([1, 2, 3]);
+        assert_eq!(l.get_node_by_index(0).unwrap().borrow().data, 1);
+        assert_eq!(l.get_node_by_index(1).unwrap().borrow().data, 2);
+        assert_eq!(l.get_node_by_index(2).unwrap().borrow().data, 3);
 
+    }
+    #[test]
+    #[should_panic(expected = "get_node_by_index out of range")]
+    fn get_node_by_index_panic(){
+        let mut l = DoubleLinkedList::from([1, 2, 3]);
+        assert_eq!(l.get_node_by_index(4).unwrap().borrow().data, 3);
+    }
     // #[test]
     // fn remove_v1() {
     //     let mut l = DoubleLinkedList::from([1, 2, 3]);
