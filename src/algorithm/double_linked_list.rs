@@ -1,4 +1,9 @@
-use std::{cell::RefCell, collections::LinkedList, fmt::Display, rc::{Rc, Weak}};
+use std::{
+    cell::RefCell,
+    collections::LinkedList,
+    fmt::Display,
+    rc::{Rc, Weak},
+};
 
 type Linked<T> = Option<Rc<RefCell<Node<T>>>>;
 /// 双向链表节点
@@ -6,7 +11,7 @@ type Linked<T> = Option<Rc<RefCell<Node<T>>>>;
 struct Node<T> {
     data: T,
     next: Linked<T>,
-    prev: Option<Weak<RefCell<Node<T>>>>
+    prev: Option<Weak<RefCell<Node<T>>>>,
 }
 
 #[derive(Debug)]
@@ -161,24 +166,18 @@ impl<T: Copy> DoubleLinkedList<T> {
     //         data
     //     });
     // }
-    //     fn back(&self) -> &Linked<T> {
-    //         // optimize to O(1)
-    //         let mut current = &self.head;
-    //         while let Some(node) = current {
-    //             if node.next.is_none() {
-    //                 break;
-    //             }
-    //             current = &node.next;
-    //         }
-    //         current
-    //     }
+    fn back(&self) -> Option<T> {
+        self.tail.as_ref().map(|tail_node| tail_node.borrow().data)
+    }
 
     fn get_node_by_index(&mut self, index: usize) -> Linked<T> {
         assert!(index < self.len, "get_node_by_index out of range");
         let mut current = self.head.clone();
         let mut i = index;
         while i > 0 {
-            current.clone().map(|node|current = node.borrow().next.clone());
+            current
+                .clone()
+                .map(|node| current = node.borrow().next.clone());
             i -= 1;
         }
         current
@@ -353,14 +352,13 @@ mod tests {
         ll.push_back(1).push_back(2).push_back(3); // 1->2->3->none
         assert_eq!(ll.pop_back().unwrap(), 3);
     }
-    // #[test]
-    // fn back() {
-    //     let mut ll = DoubleLinkedList::new();
-    //     assert!(ll.back().is_none());
-    //     ll.push_front(3).push_front(2).push_front(1); // 1->2->3->none
-    //                                                   // print!("{:?}", ll.tail());
-    //     assert_eq!(ll.back().as_ref().unwrap().data, 3)
-    // }
+    #[test]
+    fn back() {
+        let mut ll = DoubleLinkedList::new();
+        assert!(ll.back().is_none());
+        ll.push_front(3).push_front(2).push_front(1); // 1->2->3->none
+        assert_eq!(ll.back().unwrap(), 3)
+    }
     #[test]
     fn contains() {
         let ll = init_linked_list();
@@ -415,11 +413,10 @@ mod tests {
         assert_eq!(l.get_node_by_index(0).unwrap().borrow().data, 1);
         assert_eq!(l.get_node_by_index(1).unwrap().borrow().data, 2);
         assert_eq!(l.get_node_by_index(2).unwrap().borrow().data, 3);
-
     }
     #[test]
     #[should_panic(expected = "get_node_by_index out of range")]
-    fn get_node_by_index_panic(){
+    fn get_node_by_index_panic() {
         let mut l = DoubleLinkedList::from([1, 2, 3]);
         assert_eq!(l.get_node_by_index(4).unwrap().borrow().data, 3);
     }
