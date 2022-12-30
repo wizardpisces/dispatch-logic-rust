@@ -81,13 +81,14 @@ impl<T> DoubleLinkedList<T> {
     }
 
     fn push_back_node(&mut self, mut node: Node<T>) {
-        let linked_node = self.gen_linked_node(node);
-        if let Some(head_node) = self.head.clone() {
-            self.tail.take().unwrap().borrow_mut().next = linked_node.clone();
-            self.tail = linked_node.clone();
+        let new_tail_node = self.gen_linked_node(node);
+        if let Some(old_tail_node) = self.tail.take() {
+            old_tail_node.borrow_mut().next = new_tail_node.clone();
+            new_tail_node.as_ref().unwrap().borrow_mut().prev = Some(Rc::downgrade(&old_tail_node));
+            self.tail = new_tail_node;
         } else {
-            self.head = linked_node;
-            self.tail = self.head.clone();
+            self.head = new_tail_node.clone();
+            self.tail = new_tail_node;
         }
         self.len += 1;
     }
@@ -129,7 +130,8 @@ impl<T> DoubleLinkedList<T> {
 
     pub fn iter(&self) -> Iter<T> {
         Iter {
-            head: self.head.clone().map(|node| node),
+            // head: Some(Rc::downgrade(&self.head.as_ref().unwrap())),
+            head:self.head.clone(),
             len: self.len,
         }
     }
@@ -254,28 +256,21 @@ struct Iter<T> {
 
 impl<T> Iter<T> {
     fn next(&mut self) -> Option<T> {
-        let head = self.head.take();
-        match head {
-            None => None,
-            Some(head_node) => {
-                self.head = head_node.borrow().next.clone();
-                self.len -= 1;
-                // Some(head_node.borrow().data) // why this not work, but below is working
-                Some(Rc::try_unwrap(head_node).ok().unwrap().into_inner().data)
-            }
-        }
+        self.head.take().map(|old_head_node|{
+            // self.head =Some( Rc::downgrade(&old_head_node.upgrade().unwrap().borrow().next.as_ref().unwrap()));
+            self.head = old_head_node.borrow_mut().next.clone();
+            self.len -= 1;
+            Rc::try_unwrap(old_head_node).ok().unwrap().into_inner().data
+            // old_head_node.borrow().data
+        })
     }
 }
 
 impl<T> Extend<T> for DoubleLinkedList<T> {
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
-        // let mut other = DoubleLinkedList::new();
-
         iter.into_iter().for_each(move |ele| {
             self.push_back(ele);
         });
-        // other.from_iter(iter.into_iter());
-        // self.append(other)
     }
 }
 
@@ -340,6 +335,12 @@ mod tests {
         assert_eq!(data, 3);
     }
     #[test]
+    fn head() {
+        let ll = init_linked_list();
+        let data = ll.head.unwrap().borrow().data;
+        assert_eq!(data, 1);
+    }
+    #[test]
     fn append() {
         let mut ll = DoubleLinkedList::from([1, 2, 3]);
         let mut ll2 = DoubleLinkedList::from([4, 5, 6]);
@@ -379,7 +380,7 @@ mod tests {
         ll.push_back(1).push_back(2).push_back(3); // 1->2->3->none
         assert_eq!(ll.pop_back().unwrap(), 3);
     }
-  
+
     fn contains() {
         let ll = init_linked_list();
         assert!(ll.contains(&1));
@@ -403,6 +404,8 @@ mod tests {
     fn iter() {
         let l = DoubleLinkedList::from([1, 2, 3]);
         let mut iter = l.iter();
+        print!("{}", l);
+        // assert_eq!(iter.head.unwrap().borrow().data, (1));
         assert_eq!(iter.next(), Some(1));
         // assert_eq!(iter.next(), Some(2));
         // assert_eq!(iter.next(), Some(3));
@@ -414,19 +417,37 @@ mod tests {
         // assert_eq!(l.len(), 3);
         // assert_eq!(iter2.len, 2);
     }
+      #[test]
+    fn iterator_demonstration() {
+        let v1 = vec![1, 2, 3];
+
+        let mut v1_iter = v1.iter();
+
+        assert_eq!(v1_iter.next(), Some(&1));
+        assert_eq!(v1_iter.next(), Some(&2));
+        assert_eq!(v1_iter.next(), Some(&3));
+        assert_eq!(v1_iter.next(), None);
+
+        let mut v2_iter = v1.iter();
+
+        assert_eq!(v2_iter.next(), Some(&1));
+        assert_eq!(v2_iter.next(), Some(&2));
+        assert_eq!(v2_iter.next(), Some(&3));
+        assert_eq!(v2_iter.next(), None);
+    }
     #[test]
     fn front() {
         let l = DoubleLinkedList::from([1, 2, 3]);
         assert_eq!(&*l.front().unwrap(), &1);
     }
-      #[test]
+    #[test]
     fn back() {
         let mut ll = DoubleLinkedList::new();
         assert!(ll.back().is_none());
         ll.push_front(3).push_front(2).push_front(1); // 1->2->3->none
         assert_eq!(&*ll.back().unwrap(), &3);
     }
-    
+
     #[test]
     // #[test]
     // fn front_mut() {
@@ -435,7 +456,6 @@ mod tests {
     //     // *l.front_mut().unwrap() = 2;
     //     // assert_eq!(*l.front_mut().unwrap(), 2);
     // }
-
     #[test]
     fn get_node_by_index() {
         let mut l = DoubleLinkedList::from([1, 2, 3]);
